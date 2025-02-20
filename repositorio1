@@ -1,0 +1,170 @@
+!pip install odfpy
+import pandas as pd
+import re
+from google.colab import files
+from tkinter import filedialog
+
+def formatar_cnpj(cnpj):
+    cnpj = re.sub(r'\D', '', str(cnpj))  # Remove caracteres não numéricos
+    if len(cnpj) == 14:
+        return f"{cnpj[:2]}.{cnpj[2:5]}.{cnpj[5:8]}/{cnpj[8:12]}-{cnpj[12:]}"
+    return cnpj  # Retorna como está se não tiver 14 dígitos
+
+def formatar_telefone(telefone):
+    telefone = re.sub(r'\D', '', str(telefone))  # Remove caracteres não numéricos
+    if len(telefone) in [10, 11]:  # Telefone fixo (10 dígitos) ou celular (11 dígitos)
+        return f"({telefone[:2]}) {telefone[2:-4]}-{telefone[-4:]}"
+    return telefone  # Retorna como está se não tiver 10 ou 11 dígitos
+
+def selecionar_arquivo():
+    root = tk.Tk()
+    root.withdraw()
+    return filedialog.askopenfilename(title="Selecione a planilha", filetypes=[("Arquivos Excel", "*.xlsx;*.xls;*.ods")])
+
+def remover_nomes_repetidos():
+    # Solicitar o nome do arquivo ao usuário
+    print("Faça o upload do arquivo da planilha")
+    uploaded = files.upload()
+    arquivo_entrada = list(uploaded.keys())[0]
+    if not arquivo_entrada:
+        print("Nenhum arquivo selecionado. Saindo...")
+        return
+    
+    nome_coluna = "Razão Social"
+  
+    print("Digite o nome do arquivo de saída (ou pressione Enter para usar o padrão):")
+    nome_arquivo = input()
+    arquivo_saida = nome_arquivo if not  "planilha_filtrada.xlsx"
+
+
+  
+    # Carregar a planilha
+   if arquivo_entrada.endswith(".ods"):
+        df = pd.read_excel(arquivo_entrada, dtype=str, engine="odf")
+   else:
+        df = pd.read_excel(arquivo_entrada, dtype=str)
+    
+    # Verificar se a coluna existe
+  if nome_coluna not in df.columns:
+        raise ValueError(f"A coluna '{nome_coluna}' não foi encontrada na planilha.")
+    
+    # Preencher valores nulos antes da contagem
+  df[nome_coluna] = df[nome_coluna].fillna('')
+    
+    # Contar a ocorrência dos nomes
+  contagem = df[nome_coluna].value_counts()
+    
+    # Filtrar apenas os nomes que aparecem uma única vez
+  nomes_unicos = contagem[contagem == 1].index
+  df_unicos = df[df[nome_coluna].isin(nomes_unicos)].copy()
+    
+    # Formatando colunas
+  if 'CNPJ' in df_unicos.columns:
+        df_unicos['CNPJ'] = df_unicos['CNPJ'].apply(formatar_cnpj)
+    
+  if 'Telefone' in df_unicos.columns:
+        df_unicos['Telefone'] = df_unicos['Telefone'].apply(formatar_telefone)
+    
+    # Adicionando colunas obrigatórias
+  if 'Observação' not in df_unicos.columns:
+        df_unicos['Observação'] = ''
+  else:
+        df_unicos['Observação'] = df_unicos['Observação'].astype(str)
+    
+  df_unicos['Lead Gerado'] = ''
+  df_unicos['Data de Contato'] = ''
+    
+     # Salvar em uma nova planilha
+  df_unicos.to_excel(arquivo_saida, index=False, engine='openpyxl')
+  print(f'Arquivo salvo como {arquivo_saida} com {len(df_unicos)} entradas únicas.')
+    
+    # Exibir opção de baixar a planilha
+  print(f"Baixe a planilha aqui: {arquivo_saida}")
+
+# Executar a função
+remover_nomes_repetidos()
+
+
+# Instalar dependência para arquivos ODS
+!pip install odfpy
+
+import pandas as pd
+import re
+from google.colab import files
+
+def formatar_cnpj(cnpj):
+    cnpj = re.sub(r'\D', '', str(cnpj))  # Remove caracteres não numéricos
+    if len(cnpj) == 14:
+        return f"{cnpj[:2]}.{cnpj[2:5]}.{cnpj[5:8]}/{cnpj[8:12]}-{cnpj[12:]}"
+    return cnpj  # Retorna como está se não tiver 14 dígitos
+
+def formatar_telefone(telefone):
+    telefone = re.sub(r'\D', '', str(telefone))  # Remove caracteres não numéricos
+    if len(telefone) in [10, 11]:  # Telefone fixo (10 dígitos) ou celular (11 dígitos)
+        return f"({telefone[:2]}) {telefone[2:-4]}-{telefone[-4:]}"
+    return telefone  # Retorna como está se não tiver 10 ou 11 dígitos
+
+def remover_nomes_repetidos():
+    # Solicitar o upload do arquivo ao usuário
+    print("Faça o upload do arquivo da planilha")
+    uploaded = files.upload()
+
+    if not uploaded:
+        print("Nenhum arquivo enviado. Saindo...")
+        return
+
+    # Obtendo o nome do arquivo
+    arquivo_entrada = list(uploaded.keys())[0]
+
+    nome_coluna = "Razão Social"
+
+    # Solicitar o nome do arquivo de saída
+    nome_arquivo = input("Digite o nome do arquivo de saída (ou pressione Enter para usar o padrão): "+ ".xlsx").strip()
+    arquivo_saida = nome_arquivo if nome_arquivo else "planilha_filtrada.xlsx"
+
+    # Carregar a planilha
+    if arquivo_entrada.endswith(".ods"):
+        df = pd.read_excel(arquivo_entrada, dtype=str, engine="odf")
+    else:
+        df = pd.read_excel(arquivo_entrada, dtype=str)
+
+    # Verificar se a coluna existe
+    if nome_coluna not in df.columns:
+        raise ValueError(f"A coluna '{nome_coluna}' não foi encontrada na planilha.")
+
+    # Preencher valores nulos antes da contagem
+    df[nome_coluna] = df[nome_coluna].fillna('')
+
+    # Contar a ocorrência dos nomes
+    contagem = df[nome_coluna].value_counts()
+
+    # Filtrar apenas os nomes que aparecem uma única vez
+    nomes_unicos = contagem[contagem == 1].index
+    df_unicos = df[df[nome_coluna].isin(nomes_unicos)].copy()
+
+    # Formatando colunas
+    if 'CNPJ' in df_unicos.columns:
+        df_unicos['CNPJ'] = df_unicos['CNPJ'].apply(formatar_cnpj)
+
+    if 'Telefone' in df_unicos.columns:
+        df_unicos['Telefone'] = df_unicos['Telefone'].apply(formatar_telefone)
+
+    # Adicionando colunas obrigatórias
+    if 'Observação' not in df_unicos.columns:
+        df_unicos['Observação'] = ''
+    else:
+        df_unicos['Observação'] = df_unicos['Observação'].astype(str)
+
+    df_unicos['Lead Gerado'] = ''
+    df_unicos['Data de Contato'] = ''
+
+    # Salvar em uma nova planilha
+    df_unicos.to_excel(arquivo_saida, index=False, engine='openpyxl')
+    print(f'Arquivo salvo como {arquivo_saida} com {len(df_unicos)} entradas únicas.')
+
+    # Disponibilizar opção de baixar o arquivo no Google Colab
+    files.download(arquivo_saida)
+    print(f"Baixe a planilha aqui: {arquivo_saida}")
+
+# Executar a função
+remover_nomes_repetidos()
